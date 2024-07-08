@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset='utf-8'>
+	<script src='https://www.w3.org/Tools/respec/respec-w3c' async class='remove'></script>
+	<script class='remove'>
+		var respecConfig = {
+		  specStatus: "unofficial",
+		  editors: [{
+			  name: "Your Name",
+			  url: "https://your-site.com",
+			  company: "My company",
+			  companyURL: "https://your-site.com",
+		  }],
+		  github: {
+			branch: "main",
+			repoURL: "eclipse-dataspace-dcp/decentralized-claims-protocol",
+		  },
+		  xref: "web-platform",
+		};
+	</script>
+</head>
+<body>
+<h1 id="title">Eclipse Decentralized Claims Protocol</h1>
+<section id='abstract'>
+	<p>
+		This is the abstract (required).
+	</p>
+</section>
+<section id='sotd'>
+	<p>
+		This is the state of the doc.
+	</p>
+</section>
+<section>
+	<h2>Introduction</h2>
+	<section>
+		<h3>
+			Automated bibliography management
+		</h3>
+		<p>
+			This section has a CSS class "<code>informative</code>", so it is
+			listed in the TOC. ReSpec will list this reference as non-normative
+			since this is an informative section [[HTML]].
+		</p>
+	</section>
+	<section>
+		<h3>
+			Rendering of HTTP requests etc
+		</h3>
+		<aside class="example" title="Some payload">
+			<p>
+				A http request from the spec
+			<p>
+			<pre class="http">
+POST /credentials HTTP/1.1
+Host: server.example.com
+Content-Type: application/json
+Authorization: Bearer ......
+
+{
+   "a": "b",
+   "foo": bar
+}
+  </pre>
+		</aside>
+	</section>
+	<h3>
+		Embedding of Figures
+	</h3>
+	<p>There's no automatic diagram rendering like the mermaid code block in Github markdown. That's not necessarily
+		a problem as we can use exports</p>
+	<figure id="issuance-flow">
+		<img src="static/issuance.flow.png" alt="Hard to describe tbh..."/>
+		<figcaption>The issuance flow is basically the auth flow with a different scope in the SI token 🤷🏻‍♂️
+		</figcaption>
+	</figure>
+</section>
+<section id='conformance'>
+	<!-- This section is filled automatically by ReSpec. -->
+</section>
+<section id="tof" class="appendix"></section>
+
+
+</body>
+</html>
