@@ -17,6 +17,7 @@
 			repoURL: "eclipse-dataspace-dcp/decentralized-claims-protocol",
 		  },
 		  xref: "web-platform",
+		  lint: { "no-unused-dfns": false },
 		};
 	</script>
 </head>
@@ -24,63 +25,161 @@
 <h1 id="title">Eclipse Decentralized Claims Protocol</h1>
 <section id='abstract'>
 	<p>
-		This is the abstract (required).
+		This repository contains normative documents defining protocols and flows withing the Identity and Trust system
+		to be used in Tractus-X projects.
 	</p>
 </section>
 <section id='sotd'>
 	<p>
-		This is the state of the doc.
+		The responsibility of the specification has been transfered to the <a href="https://dataspace.eclipse.org/">Eclipse Dataspace Working Group</a>.
+		Please file
+		change requests or contributions according to the working group processes. Until the first version of the
+		specification from the working group is released and implemented, this repository contains the current
+		specification implemented in the Catena-X data space. Maintenance is limited to urgent issues concerning the
+		operation of this data space. There are <a href="https://github.com/eclipse-tractusx/identity-trust/blob/main/pr_etiquette.md#the-designated-editors-as-of-sept-21-2023">designated editors</a>,
+		who are the primary contributors to the content of
+		this repository. Please file urgent issues that cannot wait for the first working group release through GitHub
+		Discussions or Issues.
 	</p>
 </section>
 <section>
-	<h2>Introduction</h2>
+	<h2>Tractus-X Dataspace Topology</h2>
 	<section>
 		<h3>
-			Automated bibliography management
+			Introduction
 		</h3>
 		<p>
-			This section has a CSS class "<code>informative</code>", so it is
-			listed in the TOC. ReSpec will list this reference as non-normative
-			since this is an informative section [[HTML]].
+			This document details the systems topology that Tractus-X dataspaces employ. This topology adheres to the
+			model defined by the <a href="https://docs.internationaldataspaces.org/dataspace-protocol/overview/model">Dataspace Protocol Specifications</a>
+			(DSP):
+			<ul>
+				<li>The <dfn>Dataspace Authority</dfn> manages the dataspace. In a Tractus-X dataspace, this role may be
+					federated across multiple operating companies responsible for registration, onboarding, and
+					operations management.
+				</li>
+				<li>A <dfn>Participant</dfn> is a member the dataspace. In a Tractus-X dataspace, members may take on
+					different roles, which are attested to by <a>Verifiable Credentials</a>
+				</li>
+				<li>A <dfn>Participant Agent</dfn> performs tasks such as publishing a catalog or engaging in an asset
+					transfer. Note that a participant agent is a logical construct and does not necessarily correspond
+					to a single runtime process.
+				</li>
+				<li>An <dfn>Identity Provider</dfn>  is a service that generates ID tokens used to verify the identity
+					of a Participant Agent. In a Tractus-X dataspace, each participant will use their own identity
+					provider, which may be self-hosted or hosted in a managed environment.
+				</li>
+				<li>A <dfn>Credential Issuer</dfn> issues <a>Verifiable Credentials</a> (VC) used by participant agents to
+					allow access to assets and verify usage control
+				</li>
+				<li>
+					<dfn>Verifiable Credential</dfn> see [[vc-data-model]]
+				</li>
+			</ul>
 		</p>
 	</section>
 	<section>
 		<h3>
-			Rendering of HTTP requests etc
+			Scope
 		</h3>
-		<aside class="example" title="Some payload">
-			<p>
-				A http request from the spec
-			<p>
-			<pre class="http">
-POST /credentials HTTP/1.1
-Host: server.example.com
-Content-Type: application/json
-Authorization: Bearer ......
-
-{
-   "a": "b",
-   "foo": bar
-}
-  </pre>
-		</aside>
+		<p>
+			This specification does not cover dataspace registration systems managed by a <a>Dataspace Authority</a>
+			(operating company) as the participant registration and discovery process is out-of-scope.
+		</p>
 	</section>
-	<h3>
-		Embedding of Figures
-	</h3>
-	<p>There's no automatic diagram rendering like the mermaid code block in Github markdown. That's not necessarily
-		a problem as we can use exports</p>
-	<figure id="issuance-flow">
-		<img src="static/issuance.flow.png" alt="Hard to describe tbh..."/>
-		<figcaption>The issuance flow is basically the auth flow with a different scope in the SI token 🤷🏻‍♂️
-		</figcaption>
-	</figure>
+	<section>
+		<h3>
+			Identities
+		</h3>
+		<p>
+			The DSP specifications are based on the concept that all participants have a stable identifier (ID). This
+			ID is typically a number assigned to the participant business entity. In this scheme, <a>participant agent</a>
+			identities may be ephemeral since all operations such as signing contract agreements are associated with the
+			participant identity. This specification will also make use of DIDs [[did-core]], which can be employed to
+			cryptographically verify a participant identity. These are related as follows:
+		</p>
+		<pre class="noghighlight">
+			ID  ------ Can resolve to -----> DID
+			^                                |
+			|                                |
+			|----------Associated with--------
+		</pre>
+		<p>
+			A DID may also be used as an ID, but it is recommended to distinguish the two to allow for DID rotation.
+			For example, a participant may opt to change its hosting environment, resulting in a change to its DID such
+			as the URL associated with its DID in the case of `did:web` or its DID method. Since its Identifier remains
+			stable, existing signed contracts will not be impacted.
+		</p>
+	</section>
+	<section>
+		<h3>Systems</h3>
+		<section>
+			<h4><dfn>Registration system</dfn></h4>
+			<p>The registration system is responsible for participant registration, onboarding, and management.</p>
+			<section>
+				<h5><dfn>Registration process</dfn></h5>
+				<p>
+					When a participant is onboarded, it will be assigned an ID and either a secret token/code or
+					Membership VC that will allow the participant to bootstrap its systems. If provided a secret token,
+					the participant will be able to exchange it for a Membership VC with a <a>Credential Issuer</a>.
+				</p>
+			</section>
+		</section>
+		<section>
+			<h4><dfn>Participant Agent Systems</dfn></h4>
+			<p>
+				Participants will run one or more agent systems that interact in the dataspace. These systems may offer
+				data catalogs, perform data transfers or provide application functionality.
+
+				A participant may run the following identity-related agents. Note that this is a logical description
+				and may not represent an actual deployment topology.
+			</p>
+			<section>
+				<h5><dfn>Security Token Service</dfn> (STS)</h5>
+				<p>
+					The STS creates self-issued authorization tokens that contain identity claims used by participant
+					agents under the control of the same participant.
+				</p>
+			</section>
+			<section>
+				<h5><dfn>Credential Service</dfn> (CS)</h5>
+				<p>
+					The CS manages <a>Verifiable Credentials</a>. This includes read and write endpoints for Verifiable
+					Presentations (VPs) and Verifiable Credentials (VCs).
+				</p>
+			</section>
+			<section>
+				<h5><dfn>DID Service</dfn> (DIDS)</h5>
+				<p>
+					The DIDS creates, signs and publishes DID documents.
+				</p>
+			</section>
+		</section>
+		<section>
+			<h4><dfn>Issuer Service</dfn> (IS)</h4>
+			<p>
+				The Issuer Service is run by trust anchor and manages the lifecycle of Verifiable Credentials in a
+				dataspace. A dataspace may contain multiple Issuer Services run by different trust anchors. The
+				Issuer Service:
+				<ul>
+					<li>Issues VCs for dataspace participants</li>
+					<li>Manages revocation lists for VC types it issues based on Verifiable Credentials Status List v2021 [[vc-bitstring-status-list-20230427]].</li>
+					<li>
+						Provides cryptographic material used to verify VPs and VCs. If this is in the form of a DID, the Issuer
+						Service may use the Identity Hub DID Service.
+					</li>
+				</ul>
+			</p>
+		</section>
+	</section>
 </section>
+
+
 <section id='conformance'>
 	<!-- This section is filled automatically by ReSpec. -->
 </section>
-<section id="tof" class="appendix"></section>
-
+<section id="tof" class="appendix">
+	<h1>Notes</h1>
+</section>
 
 </body>
 </html>
