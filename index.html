@@ -43,7 +43,7 @@
 	</p>
 </section>
 <section>
-	<h2>Tractus-X Dataspace Topology</h2>
+	<h2><dfn>Tractus-X Dataspace Topology</dfn></h2>
 	<section>
 		<h3>
 			Introduction
@@ -82,7 +82,7 @@
 			Scope
 		</h3>
 		<p>
-			This specification does not cover dataspace registration systems managed by a <a>Dataspace Authority</a>
+			This specification does not cover dataspace <dfn data-lt="registration service">registration systems</dfn> managed by a <a>Dataspace Authority</a>
 			(operating company) as the participant registration and discovery process is out-of-scope.
 		</p>
 	</section>
@@ -134,7 +134,7 @@
 				and may not represent an actual deployment topology.
 			</p>
 			<section>
-				<h5><dfn>Security Token Service</dfn> (STS)</h5>
+				<h5><dfn data-lt="Secure Token Service|STS">Security Token Service</dfn> (STS)</h5>
 				<p>
 					The STS creates self-issued authorization tokens that contain identity claims used by participant
 					agents under the control of the same participant.
@@ -171,6 +171,159 @@
 			</p>
 		</section>
 	</section>
+</section>
+
+<section>
+	<h2>Identity Protocol Base</h2>
+	<p>
+		<section>
+			<h3>Introduction</h3>
+			<p>
+				This document defines a base protocol for communicating participant identities and claims in a Tractus-X
+				dataspace. This specification assumes familiarity with the <a>Tractus-X Dataspace Topology</a>
+			</p>
+		</section>
+		<section>
+			<h3>Motivation</h3>
+			<p>
+				The key goal of this protocol specification is to minimize the risk of business disruption related to the
+				failure of identity and credential systems in a Tractus-X dataspace. As such, it provides a design for a
+				decentralized system to communicate participant identities and <a>Verifiable Credentials</a> (VCs).
+			</p>
+			<p class="note">
+				Note that it is not a design goal of this protocol to support a self-sovereign data exchange network
+				where each participant is in full control of its ability to operate on the network. Specifically,
+				participants do not perform self-registration, and instead rely on a Registration Service. Imposing this
+				restriction provides a mechanism for organizational security (the field of participants can be restricted
+				through a verification process) and greatly simplifies the technical problem at hand.
+			</p>
+			<section>
+				<h4>Decentralization</h4>
+				<p>
+					Decentralization is achieved in the following ways:
+					<ul>
+						<li>
+							<b>Self-Issued Identity Tokens</b> - Each participant is responsible for creating and
+							cryptographically signing its own identity tokens. A central identity provider is therefore
+							not required, eliminating a potential locus of network failure.
+						</li>
+						<li>
+							<b>Participant VC and Cryptographic Material Management</b> - Each participant is
+							responsible for storing VCs and presenting them (VPs) in the network. Each participant is
+							also responsible for storing and making its own cryptographic material available to
+							verifiers in the network. This specification defines how VCs are presented and verified
+							without the need for a third-party verification service.
+						</li>
+						<li>
+							<b>Multiple Trust Anchors</b> - Participant VCs are signed by a third-party issuer acting
+							as a trust anchor using a cryptographic proof. The identity protocol allows for multiple
+							trust anchors in a dataspace.
+						</li>
+					</ul>
+				</p>
+			</section>
+		</section>
+		<section>
+			<h3>Identities and Identifiers</h3>
+			<p>
+				Each participant MUST have a unique, immutable <b>identity</b> provided by the <a>Registration Service</a> and a DID that it chooses. This relationship is expressed as:
+			</p>
+			<pre class="noghighlight">
+			ID  ------ Can resolve to -----> DID
+			^                                |
+			|                                |
+			|----------Associated with--------
+			</pre>
+			<p>
+				This immutable identity is termed the `participant id`. In some dataspaces, the `participant id` may be
+				a DID; otherwise there must be a mechanism to resolve a DID from a `participant id`.
+				<section>
+					<h4>The Membership VC</h4>
+					<p>
+						In the case where the `participant id` is not a DID, dataspaces which implement the TX identity
+						protocol MUST define a VC that adheres to the Verifiable Credentials Data Model v1.1 [[vc-data-model]]
+						and cryptographically binds the participant id to its DID. This VC is termed the Membership VC.
+						The VC issuer's cryptographic material MUST be resolvable via a DID.
+					</p>
+				</section>
+			</p>
+		</section>
+		<section>
+			<h3>Self-Issued ID Tokens</h3>
+			<p>
+				A Self-Issued ID Token is defined in the <a href="https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#section-1.1">Self-Issued OpenID Provider v2 specification</a>.
+			</p>
+			<p class="note" title="quote">In the Self-Issued OP case, the ID Token is self-signed with a private key under the user's control, identified by the `sub` claim.</p>
+			<p class="note" title="disclaimer">This specification does NOT require a complete implementation of the SIOPv2 specification</p>
+			<p>A client may obtain a Self-Issued ID Token using a variety or OAuth grant types. If the OAuth 2.0 Client Credential Grant type is used, the client MUST conform to <a href="#get-sts-token">the section on obtaining STS-issued access tokens</a>.</p>
+			<section>
+				<h4>Self-Issued ID Token Contents</h4>
+				<p>
+					The Self-Issued ID Token MUST adhere to JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens
+					[[rfc9068]] and MUST include the following claims:
+					<ul>
+						<li>The `iss` and `sub` claims MUST be equal and set to the bearer's (participant's) DID.</li>
+						<li>The `sub_jwk` claim is not used.</li>
+						<li>The `aud` set to the `participant_id` of the relying party (RP).</li>
+						<li>The `jti` claim that is used to mitigate against replay attacks.</li>
+					</ul>
+					<section>
+						<h5>VP Access Token</h5>
+						<p>
+							A Self-Issued ID Token MAY contain an access token as a `token` claim that can be used by
+							the relying party to obtain additional VPs from a service under the control of the ID
+							token issuer. The format of the `token` is implementation-specific and therefore must be
+							treated as an opaque string by the relying party.
+						</p>
+						<p class="ednote" title="TODO">determine claim name</p>
+					</section>
+				</p>
+			</section>
+			<section>
+				<h3>Validating Self-Issued ID Tokens</h3>
+				<p>The relying party MUST follow the steps specified in the <a href="https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#section-1.1">Self-Issued OpenID Provider v2 specification</a>.</p>
+			</section>
+			</p>
+		</section>
+		<section>
+			<h3>Verifiable Presentations</h3>
+			<p>
+				Additional client metadata such as Verifiable Presentations can be obtained by a relying party (RP)
+				using the client's DID, typically specified in the `sub` claim of a Self-Issued ID Token. The DID
+				document may contain `service` entries that can be used to resolve metadata.
+			</p>
+		</section>
+		<section id="get-sts-token">
+			<h3>Using the OAuth2 Client Credential Grant to Obtain Access Tokens from an STS</h3>
+			<p>
+				A Self-Issued ID Token MAY be obtained by a participant agent executing an OAuth 2.0 Client Credential
+				Grant ([[rfc6749]], sect 4.4) against a <a>Secure Token Service</a> (STS) Endpoint. How the participant
+				agent obtains the endpoint address is implementation-specific and beyond the scope of this specification.
+
+				If a `token` is required to be included in the Self-issued ID token, the participant agent will need to
+				request scopes for the access token. This is dependent on the API used to obtain the Self-Issued ID
+				Token. An STS implementation MAY use endpoint parameters as defined by the OAuth 2 specification
+				([[rfc6749]], sect. 8.2) to convey metadata necessary for the creation of the `token` claim. In this
+				case, the Self-Issued ID Token request MAY contain a `bearer_access_scope` authorization request
+				parameter set to a list of space-delimited scopes the `token` claim will be enabled for. If no
+				`bearer_access_scope` parameter is present, the `token` claim MUST not be included.
+			</p>
+			<p class="note">
+				A non-normative OpenAPI spec of an STS implementing client credentials flow is provided <a href="static/sts-openapi.yaml">here</a>
+			</p>
+		</section>
+		<section>
+			<h3>The Identity and Trust Protocol Context</h3>
+			<p>The [[json-ld]]Json-ld context URI for the all identity and trust specifications is:</p>
+			<p>`https://w3id.org/tractusx-trust/v[version]`</p>
+			<p>
+				Where version indicates a Semantic Versioning `MAJOR.MINOR` number. The current specifications use 0.8
+				version and the following context URI:
+			</p>
+			<p>`https://w3id.org/tractusx-trust/v0.8`</p>
+		</section>
+	</p>
+
 </section>
 
 
