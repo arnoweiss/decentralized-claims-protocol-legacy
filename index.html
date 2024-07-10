@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/html">
 <head>
 	<meta charset='utf-8'>
 	<script src='https://www.w3.org/Tools/respec/respec-w3c' async class='remove'></script>
@@ -172,9 +172,8 @@
 		</section>
 	</section>
 </section>
-
 <section>
-	<h2>Identity Protocol Base</h2>
+	<h2><dfn>Identity Protocol Base</dfn></h2>
 	<p>
 		<section>
 			<h3>Introduction</h3>
@@ -248,7 +247,7 @@
 				</section>
 			</p>
 		</section>
-		<section>
+		<section id="self-issued-id-tokens">
 			<h3>Self-Issued ID Tokens</h3>
 			<p>
 				A Self-Issued ID Token is defined in the <a href="https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#section-1.1">Self-Issued OpenID Provider v2 specification</a>.
@@ -325,11 +324,187 @@
 	</p>
 
 </section>
+<section>
+	<h2>Verifiable Presentation Protocol</h2>
+	<section>
+		<h3>Introduction</h3>
+		<p>
+			This specification defines a protocol for storing and presenting Verifiable Credentials (VC) and other
+			identity-related resources. The Verifiable Presentation Protocol (VPP) covers the following aspects:
+			<ul>
+				<li>Endpoints and message types for storing identity resources belonging to a holder in a <a>Credential
+					Service</a></li>
+				<li>Endpoints and message types for resolving identity resources</li>
+				<li>Secure token exchange for restricting access to CS endpoints</li>
+			</ul>
+			<p class="note">
+				Note that management endpoints for creating resource contexts, deleting resources, and
+				defining access control are outside the scope of this protocol.
+			</p>
+			<section>
+				<h4>Motivation</h4>
+				<p>The Verifiable Presentation Protocol (VPP) is designed to address the problem of resolving Verifiable
+					Presentations and other claims when they cannot be passed as part of a client request. For example,
+					VPs often cannot be passed as part of an HTTP message header due to size restrictions. The protocol
+					provides a secure mechanism for endpoints to resolve client resources. As part of this issue, the VPP
+					also addresses how VC issuers can request the holder's CS to store issued credentials.
+				</p>
+			</section>
+			<section>
+				<h4>Terms</h4>
+				<ul>
+					<li><b>Credential Service</b> - A network-accessible service that manages identity resources</li>
+					<li>
+						<dfn>Holder</dfn> - An entity that possesses a set of identity resources as defined by the
+						W3C VC Data Model [[vc-data-model]]. The holder will typically be the subject of a VC.
+					</li>
+					<li><dfn>Resource</dfn> - A resource is an entity managed by the <a>Credential Service</a> such as a Verifiable Credential ( VC) or Verifiable Presentation (VP).</li>
+					<li><dfn>Subject</dfn> - The target of a set of claims contained in a VC as defined by the W3C VC Data Model [[vc-data-model]]. In a dataspace, a subject will be a participant.</li>
+					<li><dfn>DID</dfn> - A decentralized identifier as defined by the DID specification [[did-core]]</li>
+				</ul>
+			</section>
+			<section>
+				<h4>Json-Ld Context</h4>
+				<p>The VPP is based on Json-Ld message types. The CS Json-Ld context is:</p>
+				<p>`https://w3id.org/tractusx-trust/v0.8`</p>
+			</section>
+			<section>
+				<h4>The Base Url</h4>
+				<p>
+					All endpoint URLs in this specification are relative. The base URL is implementation specific and may
+					include additional context information such as a sub-path that disambiguates a holder.
+				</p>
+			</section>
+		</p>
+	</section>
+	<section>
+		<h3>Presentation Flow</h3>
+		<p>
+			Below is a sequence where the client uses the OAuth 2 client credential grant flow as defined in the
+			<a>Identity Protocol Base</a> Specification:
+		</p>
+		<figure id="vpp-flow">
+			<img src="static/vpp.png" alt="Schematic sequence chart of data flow according to IATP VPP" />
+			<figcaption>data flow according to IATP VPP</figcaption>
+		</figure>
+		<p>
+			In the above sequence, the STS acts as an authorization endpoint for the client CS. The client requests a
+			self-issued token including the `bearer_access_scope` authorization parameter set to an array of scopes that
+			define the VPs the client wants the Verifier to have access to. This list of scopes is determined out of
+			band and may be derived from metadata the verifier has previously made available to the client.
+		</p>
+		<p>
+			The client receives the Self-Issued ID Token (containing an access token based on the `bearer_access_scope`
+			value) and provides it with a request to access protected resources to the verifier. The verifier extracts
+			the access token and uses it to request VPs from the client's CS. The verifier may resolve the CS endpoint
+			through a variety of methods, for example, by resolving the client's DID document and using a service entry
+			as described in <a href="#cs-endpoint-res">Section</a>. The VPs are then returned to the Verifier.
+		</p>
+	</section>
+	<section>
+		<h3>Security</h3>
+		<p>
+			CS endpoints may require an access token obtained from the resource owner. For example, a client (the
+			resource owner) that needs to present a VP to an endpoint will provide an access token to the endpoint.
+			The endpoint server will in turn use the access token when resolving the VP through a request to the
+			client's Credential Service.
 
-
-<section id='conformance'>
-	<!-- This section is filled automatically by ReSpec. -->
+			The format of the access token is not defined. The only requirement is that the token can be used by the
+			Credential Service to perform an access control check as defined in <a href="#access-scopes">Section
+			access scopes</a>.
+			<section>
+				<h4 id="access-scopes">Access Scopes</h4>
+				<p>Scopes are used to specify access privileges. A scope is a string value in the form:</p>
+				<p>`[alias]:[descriminator]:[read|write|all]`</p>
+				<p>The `[alias]` value may be implementation-specific. The `all` value indicates both `read` and `write` access.</p>
+				<section>
+					<h5>The `org.eclipse.tractusx.vc.type` Alias</h5>
+					<p>The `vc.type` alias value must be supported and is used to specify access to a verifiable credential by type. For example:</p>
+					<p>`org.eclipse.tractusx.vc.type:Member:read`</p>
+					<p>denotes read-only access to the VC type `Member` and may be used to request a VC or VP.</p>
+				</section>
+				<section>
+					<h5>The `org.eclipse.tractusx.vc.id` Alias</h5>
+					<p>The `org.eclipse.tractusx.vc.id` alias value must be supported and is used to specify access to a verifiable credential by id. For example:</p>
+					<p>`org.eclipse.tractusx.vc.id:8247b87d-8d72-47e1-8128-9ce47e3d829d:read`</p>
+					<p>denotes read-only access to the VC identified by `8247b87d-8d72-47e1-8128-9ce47e3d829d` and may be used to request a VC or VP.</p>
+				</section>
+				<section>
+					<h5>The `*` Wildcard Alias</h5>
+					<p>Implementations must also support the `*` wildcard:</p>
+					<p>`org.eclipse.tractusx.vc.type:*:write`</p>
+					<p>The above expression enables write-only access to all VCs.</p>
+				</section>
+			</section>
+			<section>
+				<h4>Access Control</h4>
+				<p>
+					How access control is defined in a <a>Credential Service</a> is implementation-specific. Implementations
+					may provide the ability to selectively restrict access to resources. The access control mechanism
+					must support the scope restrictions defined in <a href="#access-scopes">Section access scopes</a>.
+					Implementations may support additional restriction methods, including requiring the requester to
+					present its own VPs.
+					<section>
+						<h5>Submitting an Access Token</h5>
+						<p>
+							Implementations that support access control require an access token. To provide the 
+							opportunity for <a>Credential Service</a> implementations to enforce proof-of-possession,
+							the access token MUST be contained in the `token` claim of a self-issued identity token as
+							defined in <a href="#self-issued-id-tokens">Base Identity Protocol</a>. The self-issued
+							token MUST be submitted in the HTTP `Authorization` header prefixed with `Bearer` of the
+							request.
+						</p>
+					</section>
+				</p>
+			</section>
+		</p>
+	</section>
+	<section>
+		<h3>Resolution API</h3>
+		<p>
+			If a client is not authorized for an endpoint request, the Credential Service may return `4xx Client Error`.
+			The exact error code is implementation-specific.
+		</p>
+		<section>
+			<h4>Query for Presentations</h4>
+			<p>Presentations can be queried by POSTing a `PresentationQueryMessage` message to the query endpoint:</p>
+			<p>POST /presentations/query</p>
+			<p>The POST body is a `CredentialMessage` JSON object with the following properties</p>
+			<ul>
+				<li>`@context`: REQUIRED. Specifies a valid Json-Ld context.</li>
+				<li>`@type`: REQUIRED. A string specifying the `PresentationQueryMessage` type.</li>
+				<li>`presentationDefinition`: OPTIONAL. A valid `Presentation Definition` according to the <a href="https://identity.foundation/presentation-exchange/spec/v2.0.0/#presentation-definition">Presentation Exchange Specification</a>.</li>
+				<li>`scope`: OPTIONAL. An array of scopes.</li>
+			</ul>
+			<p>A PresentationQueryMessage MUST contain either a presentationDefinition or a scope parameter. It is an error to contain both.</p>
+			<p>The following are non-normative examples of the JSON body:</p>
+			<pre class="json">
+{
+  "@context": [
+    "https://w3id.org/tractusx-trust/v0.8",
+    "https://identity.foundation/presentation-exchange/submission/v1"
+  ],
+  "@type": "PresentationQueryMessage",
+  "scope": []
+}
+			</pre>
+			<pre class="json">
+{
+  "@context": [
+    "https://w3id.org/tractusx-trust/v0.8",
+    "https://identity.foundation/presentation-exchange/submission/v1"
+  ],
+  "@type": "PresentationQueryMessage",
+  "presentationDefinition": "..."
+}
+			</pre>
+			<section>
+				<h5>Presentation Definitions</h5>
+			</section>
+		</section>
+	</section>
 </section>
+<section id='conformance'></section>
 <section id="tof" class="appendix">
 	<h1>Notes</h1>
 </section>
